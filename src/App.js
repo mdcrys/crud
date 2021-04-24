@@ -1,20 +1,43 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {  isEmpty, size  } from 'lodash'
 import shortid from 'shortid'
+import { getCollection } from './actions'
 
 function App() {
   
   const [task, setTask] = useState("")
-
   const [tasks, setTasks] = useState([])
+  const [editMode, setEditMode] = useState(false)
+  const [id, setId] = useState("")
+  const [error, setError] = useState(null)
 
+
+  useEffect(() => {
+    (async () => {
+      const result = await getCollection("tasks")
+      console.log(result)
+    })()
+  }, [])
+
+
+  const validForm = () => {
+    let isValid = true
+    setError(null)
+
+    if (isEmpty(task))
+    {
+     setError("Debes ingresar un tarea.")
+      isValid = false
+    }
+    return isValid
+
+  }
   // funcion
   const addTask = (e) =>{
     e.preventDefault()
-    if(isEmpty(task))
-    {
-      console.log("Task empty")
-      return      
+    
+    if (!validForm()) {
+      return
     }
    
     //funcion
@@ -24,16 +47,36 @@ function App() {
     }
 
     setTasks([...tasks, newTask])
-
-
     setTask("")
+      
+  }
+
+    // funcion
+  const saveTask = (e) =>{
+    e.preventDefault()
+    
+    if (!validForm()) {
+      return
+    }
+   
+    const editedTask = tasks.map(item => item.id === id ? { id, name: task } : item)
+    setTasks(editedTask)
+    setEditMode(false)
+    setTask("")
+    setId("")
       
   }
 
   const deleteTask = (id) => {
     const filteredTasks = tasks.filter(task => task.id !== id)
     setTasks(filteredTasks)
-   }
+  }
+  
+  const editTask = (theTask) => {
+    setTask(theTask.name)
+    setEditMode(true)
+  setId(theTask.id)  
+  }
   return (
    
     <div className="container mt-5"> 
@@ -44,7 +87,7 @@ function App() {
             <h4 className="text-center"> Lista de tareas</h4>
           {
             size(tasks) === 0 ? (
-          <h5 className="text-center">A un no hay tareas</h5>
+          <li className="list-group-item">A un no hay tareas</li>
             ):(
           <ul className="list-group">
               {
@@ -58,7 +101,8 @@ function App() {
                       Eliminar</button>
                     <button
                       className="btn btn-warning btn-sm float-right "
-                    >
+                       onClick={() => editTask(task)}
+                   >
                       Editar</button>
                   </li>
                 ))
@@ -71,21 +115,27 @@ function App() {
           }
           </div>
           <div className="col-4">
-               <h4 className="text-center"> Formulario</h4>
-              <form onSubmit={addTask}>
+          <h4 className="text-center">
+            {editMode ? "Modificar Tarea" : "Agregar Tarea"}
+          </h4>
+          <form onSubmit={editMode ? saveTask : addTask}>
+             {
+              error && <span className="text-danger">{error}</span>
+            }
                     <input 
                       type="text"
                       className="form-control mb-2"
                       placeholder="Ingrese la tarea.."
                       onChange={(text) => setTask(text.target.value)}
                       value={task}
-                    />
+            />
+           
                     <button 
-                    className="btn btn-dark btn-block"
+              className={editMode ? "btn btn-warning btn-block" : "btn btn-dark btn-block"}
                     type="submit">
 
 
-                  Agregar
+              {editMode ? "Guardar" : "Agregar"}
                     </button> 
               </form>
           </div>  
