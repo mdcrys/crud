@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import {  isEmpty, size  } from 'lodash'
 import shortid from 'shortid'
-import { getCollection } from './actions'
+import {addDocument,  getCollection, updateDocument, deleteDocument } from './actions'
 
 function App() {
   
@@ -15,7 +15,9 @@ function App() {
   useEffect(() => {
     (async () => {
       const result = await getCollection("tasks")
-      console.log(result)
+      if (result.statusResponse) {
+        setTasks(result.data)
+      }
     })()
   }, [])
 
@@ -33,29 +35,36 @@ function App() {
 
   }
   // funcion
-  const addTask = (e) =>{
+  const addTask = async(e) =>{
     e.preventDefault()
     
     if (!validForm()) {
       return
     }
    
-    //funcion
-    const newTask = {
-      id: shortid.generate(),
-      name: task
+   //funcion para almacenar datos a firebase
+    const result = await addDocument("tasks", { name: task })
+    if (!result.statusResponse) {
+      setError(result.error)
+      return
     }
 
-    setTasks([...tasks, newTask])
+    setTasks([...tasks, {id: result.data.id, name:task}])
     setTask("")
       
   }
 
     // funcion
-  const saveTask = (e) =>{
+  const saveTask = async(e) =>{
     e.preventDefault()
     
     if (!validForm()) {
+      return
+    }
+
+    const result = await updateDocument("tasks", id, { name: task })
+    if (!result.statusResponse) {
+      setError(result.error)
       return
     }
    
@@ -67,7 +76,12 @@ function App() {
       
   }
 
-  const deleteTask = (id) => {
+  const deleteTask = async(id) => {
+    const result = await deleteDocument("tasks", id)
+    if (!result.statusResponse) {
+      setError(result.error)
+      return
+    }
     const filteredTasks = tasks.filter(task => task.id !== id)
     setTasks(filteredTasks)
   }
